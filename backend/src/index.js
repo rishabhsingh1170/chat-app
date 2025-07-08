@@ -43,22 +43,6 @@ if (process.env.NODE_ENV === "production") {
   });
 }
 
-import util from "util";
-
-app._router.stack.forEach((layer, i) => {
-  if (layer.route) {
-    const path = layer.route?.path || "<no path>";
-    const method = Object.keys(layer.route.methods).join(", ");
-    console.log(`🔍 ROUTE ${i}: [${method.toUpperCase()}] ${path}`);
-  } else if (layer.name === "router" && layer.handle.stack) {
-    layer.handle.stack.forEach((r, j) => {
-      console.log(`📎 Sub-route ${i}.${j}: ${util.inspect(r.route?.path)}`);
-    });
-  } else if (layer.name && layer.name !== "<anonymous>") {
-    console.log(`🔧 Middleware ${i}: ${layer.name}`);
-  }
-});
-
 server.listen(PORT, () => {
   console.log(`server running on post ${PORT}`);
   connectDB();
