@@ -1,12 +1,22 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useChatStore } from "../store/useChatStore.js";
 import {Send , Image , X} from "lucide-react";
+import toast from "react-hot-toast";
 
 export default function MessageInput() {
   const [text, setText] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
   const fileInputRef = useRef(null);
-  const { sendMessages } = useChatStore();
+  const typingTimeoutRef = useRef(null);
+  const { sendMessages, sendTypingStatus, selectedUser } = useChatStore();
+  const selectedUserId = selectedUser?._id;
+
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      sendTypingStatus(false, selectedUserId);
+    };
+  }, [sendTypingStatus, selectedUserId]);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -32,6 +42,9 @@ export default function MessageInput() {
     if (!text.trim() && !imagePreview) return;
 
     try {
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      sendTypingStatus(false, selectedUserId);
+
       await sendMessages({
         text: text.trim(),
         image: imagePreview,
@@ -74,7 +87,15 @@ export default function MessageInput() {
             className="w-full input input-bordered rounded-lg input-sm sm:input-md"
             placeholder="Type a message..."
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) => {
+              setText(e.target.value);
+              sendTypingStatus(Boolean(e.target.value.trim()), selectedUserId);
+
+              if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+              typingTimeoutRef.current = setTimeout(() => {
+                sendTypingStatus(false, selectedUserId);
+              }, 1000);
+            }}
           />
           <input
             type="file"

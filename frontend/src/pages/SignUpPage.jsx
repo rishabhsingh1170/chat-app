@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useAuthStore } from '../store/useAuthStore';
-import { Eye, EyeOff, Mail, MessageSquare, User,Lock, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Mail, MessageSquare, User,Lock, Loader2, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import AuthImagePattern from '../components/AuthImagePattern';
 import toast from 'react-hot-toast';
@@ -11,19 +11,36 @@ function SignUpPage() {
         fullName:"",
         email:"",
         password:"",
+        otp:"",
     });
+    const [isOtpSent, setIsOtpSent] = useState(false);
 
-    const {signup , isSigningUp} = useAuthStore();
+    const {signup , isSigningUp, requestSignupOtp, isSendingOtp} = useAuthStore();
+
+    const validateEmail = () => {
+        if(!formData.email.trim()) return toast.error("Email is required");
+        if(!/^\S+@\S+\.\S+$/.test(formData.email)) return toast.error("Invalid email");
+
+        return true;
+    }
 
     const validatFrom = () =>{
         if(!formData.fullName.trim()) return toast.error("Full Name is required");
-        if(!formData.email.trim()) return toast.error("Email is required");
-        if(!/^\S+@\S+\.\S+$/.test(formData.email)) return toast.error("Invalid email");
+        if(validateEmail() !== true) return false;
         if(!formData.password) return toast.error("Password is required");
         if(formData.password.length < 6) return toast.error("Password must be at least 6 characters");
+        if(!formData.otp.trim()) return toast.error("OTP is required");
+        if(!/^\d{6}$/.test(formData.otp.trim())) return toast.error("Enter a valid 6-digit OTP");
 
         return true;
 
+    }
+
+    const handleSendOtp = async () => {
+        if(validateEmail() !== true) return;
+
+        const sent = await requestSignupOtp(formData.email);
+        if(sent) setIsOtpSent(true);
     }
 
     const handleSubmit = (e) => {
@@ -85,7 +102,50 @@ function SignUpPage() {
                   placeholder="Rishabh@gamil.com"
                   value={formData.email}
                   onChange={(e) => {
-                    setFromData({ ...formData, email: e.target.value });
+                    setFromData({ ...formData, email: e.target.value, otp: "" });
+                    setIsOtpSent(false);
+                  }}
+                />
+              </div>
+              <button
+                type="button"
+                className="btn btn-outline btn-sm mt-3"
+                onClick={handleSendOtp}
+                disabled={isSendingOtp || !formData.email.trim()}
+              >
+                {isSendingOtp ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    Sending...
+                  </>
+                ) : isOtpSent ? (
+                  "Resend OTP"
+                ) : (
+                  "Send OTP"
+                )}
+              </button>
+            </div>
+
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text font-medium">Email OTP</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <ShieldCheck className="size-5 text-base-content/40 z-10" />
+                </div>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  className={"input input-bordered w-full pl-10"}
+                  placeholder="123456"
+                  value={formData.otp}
+                  onChange={(e) => {
+                    setFromData({
+                      ...formData,
+                      otp: e.target.value.replace(/\D/g, "").slice(0, 6),
+                    });
                   }}
                 />
               </div>

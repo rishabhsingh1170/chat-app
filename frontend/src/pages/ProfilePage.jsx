@@ -1,10 +1,16 @@
 import React, { useState } from 'react'
 import { useAuthStore } from '../store/useAuthStore'
-import { Camera, Mail, User } from 'lucide-react';
+import { Camera, Loader2, Mail, Trash2, User } from 'lucide-react';
 
 function ProfilePage() {
 
-  const { authUser, isUpdatingProfile, updateProfile } = useAuthStore();
+  const {
+    authUser,
+    isUpdatingProfile,
+    isDeletingAccount,
+    updateProfile,
+    deleteAccount,
+  } = useAuthStore();
   const [selectedImg , setSelectedImg] = useState(null);
 
   const handlerImageUpload = async (e) =>{
@@ -22,6 +28,17 @@ function ProfilePage() {
     }
 
   }
+
+  const handleDeleteAccount = async () => {
+    const confirmed = window.confirm(
+      "Delete your account permanently? This will remove your profile and all of your messages."
+    );
+
+    if (!confirmed) return;
+
+    await deleteAccount();
+  }
+
   return (
     <div className="h-screen pt-20">
       <div className="max-w-2xl mx-auto p-4 py-6">
@@ -99,6 +116,33 @@ function ProfilePage() {
                 <span className="text-green-500">Active</span>
               </div>
             </div>
+          </div>
+
+          <div className="rounded-xl border border-error/40 bg-error/10 p-6 space-y-4">
+            <div>
+              <h2 className="text-lg font-medium text-error">Delete Account</h2>
+              <p className="text-sm text-base-content/70 mt-1">
+                Permanently delete your profile and all messages connected to this account.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="btn btn-error"
+              onClick={handleDeleteAccount}
+              disabled={isDeletingAccount}
+            >
+              {isDeletingAccount ? (
+                <>
+                  <Loader2 className="size-5 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="size-5" />
+                  Delete Account
+                </>
+              )}
+            </button>
           </div>
         </div>
       </div>

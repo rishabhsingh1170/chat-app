@@ -5,14 +5,32 @@ import { Users } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 
 export default function Sidebar() {
-    const {getUsers, users, selectedUser, setSelectedUser, isUsersLoading } = useChatStore();
+    const {
+      getUsers,
+      users,
+      selectedUser,
+      setSelectedUser,
+      isUsersLoading,
+      subscribeToSidebarMessages,
+      unsubscribeFromSidebarMessages,
+    } = useChatStore();
     const [showOnlineOnly, setShowOnlineOnly] = useState(false);
 
-    const {onlineUsers} = useAuthStore();
+    const {onlineUsers, socket} = useAuthStore();
 
     useEffect(()=>{
         getUsers()
     },[getUsers])
+
+    useEffect(() => {
+        if (!socket) return;
+
+        subscribeToSidebarMessages();
+
+        return () => {
+          unsubscribeFromSidebarMessages();
+        };
+    },[socket, subscribeToSidebarMessages, unsubscribeFromSidebarMessages])
 
     const filteredUsers = showOnlineOnly ? users.filter(user => onlineUsers.includes(user._id)) : users;
 

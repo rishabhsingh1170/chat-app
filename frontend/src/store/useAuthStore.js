@@ -8,8 +8,10 @@ const BASE_URL = import.meta.env.MODE === "development" ? "http://localhost:5000
 export const useAuthStore = create((set, get) => ({
   authUser: null,
   isSigningUp: false,
+  isSendingOtp: false,
   isLoggingIn: false,
   isUpdatingProfile: false,
+  isDeletingAccount: false,
   onlineUsers: [],
   socket: null,
 
@@ -26,6 +28,22 @@ export const useAuthStore = create((set, get) => ({
       set({ authUser: null });
     } finally {
       set({ isCheckingAuth: false });
+    }
+  },
+
+  requestSignupOtp: async (email) => {
+    set({ isSendingOtp: true });
+    try {
+      const res = await axiosInstance.post("/auth/send-signup-otp", { email });
+      toast.success(res.data.message || "OTP sent to your email");
+      return true;
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || "Could not send OTP. Please try again."
+      );
+      return false;
+    } finally {
+      set({ isSendingOtp: false });
     }
   },
 
@@ -46,7 +64,7 @@ export const useAuthStore = create((set, get) => ({
     } catch (error) {
       console.error("Signup error:", error);
       toast.error(
-        error.response.data.message || "Signup failed. Please try again."
+        error.response?.data?.message || "Signup failed. Please try again."
       );
     } finally {
       set({ isSigningUp: false });
@@ -89,6 +107,22 @@ export const useAuthStore = create((set, get) => ({
       toast.error(error.response.data.message || "Profile update failed.");
     } finally {
       set({ isUpdatingProfile: false });
+    }
+  },
+
+  deleteAccount: async () => {
+    set({ isDeletingAccount: true });
+    try {
+      const res = await axiosInstance.delete("/auth/me");
+      get().disconnectSocket();
+      set({ authUser: null, onlineUsers: [], socket: null });
+      toast.success(res.data.message || "Account deleted successfully");
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || "Could not delete account. Please try again."
+      );
+    } finally {
+      set({ isDeletingAccount: false });
     }
   },
 

@@ -6,7 +6,48 @@ import User from "../models/user.model.js";
 export const getUserForSidebar = async (req ,res) =>{
     try {
         const loggedInUser = req.user._id;
-        const filteredUsers = await User.find({_id:{$ne:loggedInUser}}).select("-password");
+        const users = await User.find({_id:{$ne:loggedInUser}}).select("-password").lean();
+        const latestMessages = await Message.aggregate([
+            {
+                $match: {
+                    $or: [
+                        { senderId: loggedInUser },
+                        { receiverId: loggedInUser },
+                    ],
+                },
+            },
+            { $sort: { createdAt: -1 } },
+            {
+                $group: {
+                    _id: {
+                        $cond: [
+                            { $eq: ["$senderId", loggedInUser] },
+                            "$receiverId",
+                            "$senderId",
+                        ],
+                    },
+                    lastMessageAt: { $first: "$createdAt" },
+                },
+            },
+        ]);
+
+        const latestMessageMap = new Map(
+            latestMessages.map((message) => [
+                message._id.toString(),
+                message.lastMessageAt,
+            ])
+        );
+
+        const filteredUsers = users
+            .map((user) => ({
+                ...user,
+                lastMessageAt: latestMessageMap.get(user._id.toString()) || null,
+            }))
+            .sort((a, b) => {
+                const aTime = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
+                const bTime = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0;
+                return bTime - aTime;
+            });
 
         res.status(200).json(filteredUsers);
     } catch (error) {

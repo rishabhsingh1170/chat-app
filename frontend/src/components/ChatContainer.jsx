@@ -12,11 +12,12 @@ export default function ChatContainer() {
     messages,
     getMessages,
     isMessagesLoading,
+    isSelectedUserTyping,
     selectedUser,
     subscribeToMeaasages,
     unsubscribeFromMessages,
   } = useChatStore();
-  const {authUser } = useAuthStore();
+  const {authUser, socket } = useAuthStore();
   const messageEndRef = useRef(null);
 
 useEffect(() => {
@@ -26,12 +27,12 @@ useEffect(() => {
   return () => {
     unsubscribeFromMessages();
   };
-}, [selectedUser._id, getMessages,subscribeToMeaasages, unsubscribeFromMessages]);
+}, [selectedUser._id, socket, getMessages,subscribeToMeaasages, unsubscribeFromMessages]);
 
 useEffect(() => {
   if (messageEndRef.current && messages)
     messageEndRef.current.scrollIntoView({ behavior: "smooth" });
-}, [messages]);
+}, [messages, isSelectedUserTyping]);
 
 
   if(isMessagesLoading) return (
@@ -58,7 +59,7 @@ useEffect(() => {
               <div className="size-10 rounded-full border">
                 <img
                   src={
-                    message.senderId == authUser
+                    message.senderId === authUser._id
                       ? authUser.profilePic || "/avatar.jpeg"
                       : selectedUser.profilePic || "/avatar.jpeg"
                   }
@@ -84,6 +85,22 @@ useEffect(() => {
             </div>
           </div>
         ))}
+        {isSelectedUserTyping && (
+          <div className="chat chat-start" ref={messageEndRef}>
+            <div className="chat-image avatar">
+              <div className="size-10 rounded-full border">
+                <img
+                  src={selectedUser.profilePic || "/avatar.jpeg"}
+                  alt="profile pic"
+                />
+              </div>
+            </div>
+            <div className="chat-bubble flex items-center gap-2">
+              <span className="text-xs opacity-70">typing</span>
+              <span className="loading loading-dots loading-sm" />
+            </div>
+          </div>
+        )}
       </div>
 
       <MessageInput />
